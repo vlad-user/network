@@ -11,4 +11,17 @@ def allreduce(send, recv, comm):
         an array to store the result of the reduction. Of same shape as send
     comm : MPI.Comm
     """
-    raise NotImplementedError("To be implemented")
+    result = []
+    for dest in range(comm.size):
+        if dest != comm.rank:
+            comm.send(send, dest=dest)
+
+    for source in range(comm.size):
+        if source != comm.rank:
+            result.append(comm.recv(source=source))
+    
+    result.append(send)
+    for i, x in enumerate(zip(*result)):
+        recv[i] = sum(x)
+
+

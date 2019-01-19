@@ -15,12 +15,14 @@ class SynchronicNeuralNetwork(NeuralNetwork):
         MPI.Init()
         comm = MPI.COMM_WORLD
         sendbuff = []
+        nabla_w = []
+        nabla_b = []
         for epoch in range(self.epochs):
             data = training_data[0]
             labels = training_data[1]
             mini_batches = self.create_batches(data, labels, self.mini_batch_size // comm.size)
 
-            for x, y in mini_batches[:10]:
+            for x, y in mini_batches:
                 # doing props
                 if comm.rank == 0:
                     sendbuff = utils.create_batches(x, y, len(x)//comm.size)
@@ -29,14 +31,15 @@ class SynchronicNeuralNetwork(NeuralNetwork):
 
                 self.forward_prop(x_)
                 ma_nabla_b, ma_nabla_w = self.back_prop(y_)
-
-                recvbuff = []
-                comm.allreduce((ma_nabla_w, ma_nabla_b), recvbuff, op=MPI.SUM)
-
-                nabla_w = [x[0] for x in recvbuff]
-                nabla_b = [x[1] for x in recvbuff]
                 
-                """
+                #nabla_w = []
+                #nabla_b = []
+
+                #comm.Allreduce(ma_nabla_w, nabla_w)
+                #comm.Allreduce(ma_nabla_b, nabla_b)
+                #nabla_w = [x[0] for x in recvbuff]
+                #nabla_b = [x[1] for x in recvbuff]
+                
                 recvbuff = comm.allgather((ma_nabla_w, ma_nabla_b))
                 # summing all ma_nabla_b and ma_nabla_w to nabla_w and nabla_b
                 
@@ -46,7 +49,7 @@ class SynchronicNeuralNetwork(NeuralNetwork):
 
                 nabla_w = [sum(x) for x in zip(*nabla_w_list)]
                 nabla_b = [sum(x) for x in zip(*nabla_b_list)]
-                """
+                
                 #calculate work
                 self.weights = [w - self.eta * dw for w, dw in zip(self.weights, nabla_w)]
                 self.biases = [b - self.eta * db for b, db in zip(self.biases, nabla_b)]        
