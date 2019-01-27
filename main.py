@@ -7,7 +7,6 @@ from time import time
 from sync_network import *
 from async_network import *
 
-
 def print_use():
     print("to run sync network use the command srun -K -p 236370 -c 4 -n X --pty python3 main.py sync")
     print("to run async network use the command srun -K -p 236370 -c 4 -n X --pty python3 main.py async M")
@@ -29,12 +28,12 @@ batch_size = 632
 
 #initialize epoch
 
-epochs = 20
+epochs = 5
 
 # initialize training, validation and testing data
 training_data, validation_data, test_data = load_mnist()
 
-'''
+
 start1 = time()
 #initialize neuralnet
 nn = NeuralNetwork(layers, learning_rate, mini_batch_size, batch_size, epochs)
@@ -50,9 +49,8 @@ print('Time reg:', stop1 - start1)
 
 accuracy = nn.validate(test_data) / 100.0
 print("Test Accuracy: " + str(accuracy) + "%")
-'''
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 if sys.argv[1] == "sync":
     start1 = time()
     #initialize neuralnet
