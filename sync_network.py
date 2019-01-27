@@ -32,18 +32,8 @@ class SynchronicNeuralNetwork(NeuralNetwork):
                 self.forward_prop(x_)
                 ma_nabla_b, ma_nabla_w = self.back_prop(y_)
                 
-                #nabla_w = []
-                #nabla_b = []
-
-                #comm.Allreduce(ma_nabla_w, nabla_w)
-                #comm.Allreduce(ma_nabla_b, nabla_b)
-                #nabla_w = [x[0] for x in recvbuff]
-                #nabla_b = [x[1] for x in recvbuff]
-                
                 recvbuff = comm.allgather((ma_nabla_w, ma_nabla_b))
-                # summing all ma_nabla_b and ma_nabla_w to nabla_w and nabla_b
-                
-                #if comm.rank == 0:
+
                 nabla_w_list = [x[0] for x in recvbuff]
                 nabla_b_list = [x[1] for x in recvbuff]
 

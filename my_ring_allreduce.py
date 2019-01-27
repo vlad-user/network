@@ -1,4 +1,5 @@
 import numpy as np
+from mpi4py import MPI
 
 """ Implementation of a ring-reduce with addition. """
 def ringallreduce(send, recv, comm):
@@ -17,7 +18,7 @@ def ringallreduce(send, recv, comm):
                     and on its own chunk[p-1]
                 * send the reduced chunk to the next process `p+1`.
         3. Similar to step 2, transmit reduced chunks to all of the
-            processes.
+            processes withtout reduction.
     Parameters
     ----------
     send : numpy array
@@ -26,34 +27,31 @@ def ringallreduce(send, recv, comm):
         an array to store the result of the reduction. Of same shape as send
     comm : MPI.Comm
     """
+    chunks = np.array_split(send, comm.size)
+    prev_pid = (comm.rank - 1) % comm.size
+    next_pid = (comm.rank + 1) % comm.size
+    chunk2send = comm.rank
+    chunk2recv = prev_pid
 
-    batch = send.shape[0] // comm.size
-    indices2split = [i + batch
-                     for i in range(0, send.shape[0], batch)
-                     if i + batch < send.shape[0]]
+    for _ in range(comm.size - 1):
+        comm.send(chunks[chunk2send], dest=next_pid)
+        chunks[chunk2recv] = np.add(chunks[chunk2recv], comm.recv(source=prev_pid))
+        chunk2send = chunk2recv
+        chunk2recv = (chunk2recv - 1) % comm.size
 
-    chunks = np.split(send, indices2split)
+    chunk2send = next_pid
+    chunk2recv = (chunk2send - 1) % comm.size
 
-    pid = comm.rank
-    prev_pid = (pid - 1 if pid - 1 >= 0 else comm.size - 1)
-    next_pid = (pid + 1 if pid + 1 < comm.size else 0)
-
-    for i in range(comm.size - 1):
-        comm.send(chunks[pid], dest=next_pid)
-        chunks[prev_pid] = np.add(chunks[prev_pid],
-                                  comm.recv(source=prev_pid))
-
-
-    chunk2send = prev_pid
-    chunk2recv = (prev_pid - 1 if prev_pid -1 >= 0 else comm.size - 1)
-    for i in range(comm.size - 1):
+    for _ in range(comm.size - 1):
         comm.send(chunks[chunk2send], dest=next_pid)
         chunks[chunk2recv] = comm.recv(source=prev_pid)
         chunk2send = chunk2recv
-        chunk2recv = (chunk2recv - 1 if chunk2recv - 1 >= 0 else comm.size - 1)
+        chunk2recv = (chunk2recv - 1) % comm.size
     
     recv_idx = 0
     for chunk in chunks:
-        for i in chunk:
-            recv[recv_idx] = i
+        for i in range(chunk.shape[0]):
+            recv[recv_idx] = chunk[i]
             recv_idx += 1
+    
+    
