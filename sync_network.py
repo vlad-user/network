@@ -25,9 +25,10 @@ class SynchronicNeuralNetwork(NeuralNetwork):
             mini_batches = self.create_batches(data, labels, self.mini_batch_size // size)
             #print(f'My rank is {rank} and my len of mini_batches is: {len(mini_batches)}')
             print('My rank is', rank, '/', size)
-            chunks = self._chunkify(mini_batches, len(mini_batches) // size)
+            #chunks = self._chunkify(mini_batches, len(mini_batches) // size)
             #print(f'My rank is {rank} and my len of    chunks    is: {len(chunks)}')
-            for x, y in chunks[rank]:
+            #for x, y in chunks[rank]:
+            for x, y in mini_batches:
                 # doing props
 
                 self.forward_prop(x)
