@@ -27,26 +27,28 @@ def ringallreduce(send, recv, comm):
         an array to store the result of the reduction. Of same shape as send
     comm : MPI.Comm
     """
-    chunks = np.array_split(send, comm.size)
-    prev_pid = (comm.rank - 1) % comm.size
-    next_pid = (comm.rank + 1) % comm.size
-    chunk2send = comm.rank
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+    chunks = np.array_split(send, size)
+    prev_pid = (rank - 1) % size
+    next_pid = (rank + 1) % size
+    chunk2send = rank
     chunk2recv = prev_pid
 
     for _ in range(comm.size - 1):
         comm.send(chunks[chunk2send], dest=next_pid)
         chunks[chunk2recv] = np.add(chunks[chunk2recv], comm.recv(source=prev_pid))
         chunk2send = chunk2recv
-        chunk2recv = (chunk2recv - 1) % comm.size
+        chunk2recv = (chunk2recv - 1) % size
 
     chunk2send = next_pid
-    chunk2recv = (chunk2send - 1) % comm.size
+    chunk2recv = (chunk2send - 1) % size
 
     for _ in range(comm.size - 1):
         comm.send(chunks[chunk2send], dest=next_pid)
         chunks[chunk2recv] = comm.recv(source=prev_pid)
         chunk2send = chunk2recv
-        chunk2recv = (chunk2recv - 1) % comm.size
+        chunk2recv = (chunk2recv - 1) % size
     
     recv_idx = 0
     for chunk in chunks:

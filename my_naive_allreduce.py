@@ -4,15 +4,17 @@ import numpy as np
 from mpi4py import MPI
 
 def allreduce(send, recv, comm):
-    all_arys = [np.zeros_like(send) if i != comm.rank else send
-                for i in range(comm.size)]
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+    all_arys = [np.zeros_like(send) if i != rank else send
+                for i in range(size)]
     reduced = np.zeros_like(send)
-    communications = get_communications(comm.size)
+    communications = get_communications(size)
 
     for src, dst in communications:
-        if comm.rank == src:
+        if rank == src:
             comm.send(send, dest=dst)
-        if comm.rank == dst:
+        if rank == dst:
             all_arys[src] = comm.recv(source=src)
 
     reduced = sum(all_arys)

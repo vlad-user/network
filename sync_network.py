@@ -12,38 +12,46 @@ from mpi4py import MPI
 class SynchronicNeuralNetwork(NeuralNetwork):
 
     def fit(self, training_data, validation_data=None):
-        MPI.Init()
+        if not MPI.Is_initialized():
+            MPI.Init()
         comm = MPI.COMM_WORLD
-        sendbuff = []
+        rank = comm.Get_rank()
+        size = comm.Get_size()
         nabla_w = []
         nabla_b = []
         for epoch in range(self.epochs):
             data = training_data[0]
             labels = training_data[1]
-            mini_batches = self.create_batches(data, labels, self.mini_batch_size // comm.size)
+            mini_batches = self.create_batches(data, labels, self.mini_batch_size // size)
+            #print(f'My rank is {rank} and my len of mini_batches is: {len(mini_batches)}')
 
-            for x, y in mini_batches:
+            chunks = self._chunkify(mini_batches, len(mini_batches) // size)
+            #print(f'My rank is {rank} and my len of    chunks    is: {len(chunks)}')
+            for x, y in chunks[rank]:
                 # doing props
-                if comm.rank == 0:
-                    sendbuff = utils.create_batches(x, y, len(x)//comm.size)
 
-                (x_, y_) = comm.scatter(sendbuff, root=0)
+                self.forward_prop(x)
+                ma_nabla_b, ma_nabla_w = self.back_prop(y)
+                for b in ma_nabla_b:
+                    tmp = np.zeros_like(b)
+                    comm.Allreduce(b, tmp)
+                    #ringallreduce(b, tmp, comm)
+                    nabla_b.append(tmp)
+                for w in ma_nabla_w:
+                    tmp = np.zeros_like(w)
+                    comm.Allreduce(w, tmp)
+                    #ringallreduce(w, tmp, comm)
+                    nabla_w.append(tmp)
 
-                self.forward_prop(x_)
-                ma_nabla_b, ma_nabla_w = self.back_prop(y_)
-                
-                recvbuff = comm.allgather((ma_nabla_w, ma_nabla_b))
-
-                nabla_w_list = [x[0] for x in recvbuff]
-                nabla_b_list = [x[1] for x in recvbuff]
-
-                nabla_w = [sum(x) for x in zip(*nabla_w_list)]
-                nabla_b = [sum(x) for x in zip(*nabla_b_list)]
-                
                 #calculate work
                 self.weights = [w - self.eta * dw for w, dw in zip(self.weights, nabla_w)]
-                self.biases = [b - self.eta * db for b, db in zip(self.biases, nabla_b)]        
-            if comm.rank == 0:
-                self.print_progress(validation_data, epoch)
+                self.biases = [b - self.eta * db for b, db in zip(self.biases, nabla_b)]
+                nabla_w = []
+                nabla_b = []    
+            
+            self.print_progress(validation_data, epoch)
 
         MPI.Finalize()
+
+    def _chunkify(self, list_, n_chunks):
+        return [list_[i:i+n_chunks] for i in range(0, len(list_), n_chunks)]
