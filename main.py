@@ -18,6 +18,7 @@ if num_args < 2 or num_args > 3:
 
 #initialize layer sizes as list
 layers = [784,128,64,10]
+#layers = [784, 2, 10]
 
 #initialize learning rate
 learning_rate = 0.1
@@ -33,7 +34,7 @@ epochs = 5
 # initialize training, validation and testing data
 training_data, validation_data, test_data = load_mnist()
 
-
+'''
 start1 = time()
 #initialize neuralnet
 nn = NeuralNetwork(layers, learning_rate, mini_batch_size, batch_size, epochs)
@@ -49,7 +50,7 @@ print('Time reg:', stop1 - start1)
 
 accuracy = nn.validate(test_data) / 100.0
 print("Test Accuracy: " + str(accuracy) + "%")
-
+'''
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 if sys.argv[1] == "sync":
     start1 = time()
