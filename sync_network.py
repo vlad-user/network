@@ -24,9 +24,10 @@ class SynchronicNeuralNetwork(NeuralNetwork):
             labels = training_data[1]
             mini_batches = self.create_batches(data, labels, self.mini_batch_size // size)
             #print(f'My rank is {rank} and my len of mini_batches is: {len(mini_batches)}')
-            print('My rank is', rank, '/', size)
-            chunks = self._chunkify(mini_batches, len(mini_batches) // size)
-            #print(f'My rank is {rank} and my len of    chunks    is: {len(chunks)}')
+            #print('My rank is', rank, '/', size)
+            
+            chunks = self._chunkify(mini_batches, size)
+            #print(f'My rank is {rank} and my len of    chunks    is: {len(chunks[rank])}, {len(chunks)}')
             for x, y in chunks[rank]:
 
                 # doing props
@@ -36,6 +37,8 @@ class SynchronicNeuralNetwork(NeuralNetwork):
                 for b in ma_nabla_b:
                     tmp = np.zeros_like(b)
                     comm.Allreduce(b, tmp)
+                    #if b.shape[0] == 2:
+                    #    print('rank=', rank, ', b=', b, ', tmp=', tmp)
                     #ringallreduce(b, tmp, comm)
                     nabla_b.append(tmp)
                 for w in ma_nabla_w:
@@ -51,8 +54,10 @@ class SynchronicNeuralNetwork(NeuralNetwork):
                 nabla_b = []    
             
             self.print_progress(validation_data, epoch)
-
+            sys.stdout.flush()
         MPI.Finalize()
 
-    def _chunkify(self, list_, n_chunks):
+    def _chunkify(self, lst, n):
+        return [lst[i::n] for i in range(n)]
+    def __chunkify(self, list_, n_chunks):
         return [list_[i:i+n_chunks] for i in range(0, len(list_), n_chunks)]
