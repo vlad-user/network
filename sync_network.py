@@ -24,7 +24,7 @@ class SynchronicNeuralNetwork(NeuralNetwork):
             labels = training_data[1]
             mini_batches = self.create_batches(data, labels, self.mini_batch_size // size)
             #print(f'My rank is {rank} and my len of mini_batches is: {len(mini_batches)}')
-
+            print('My rank is', rank, '/', size)
             chunks = self._chunkify(mini_batches, len(mini_batches) // size)
             #print(f'My rank is {rank} and my len of    chunks    is: {len(chunks)}')
             for x, y in chunks[rank]:
