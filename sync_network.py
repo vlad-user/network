@@ -24,27 +24,24 @@ class SynchronicNeuralNetwork(NeuralNetwork):
             labels = training_data[1]
             mini_batches = self.create_batches(data, labels, self.mini_batch_size // size)
             #print(f'My rank is {rank} and my len of mini_batches is: {len(mini_batches)}')
-            print('My rank is', rank, '/', size-1)
+            #print('My rank is', rank, '/', size-1)
             
             chunks = self._chunkify(mini_batches, size)
-            #print(f'My rank is {rank} and my len of    chunks    is: {len(chunks[rank])}, {len(chunks)}')
+
             for x, y in chunks[rank]:
 
                 # doing props
-
                 self.forward_prop(x)
                 ma_nabla_b, ma_nabla_w = self.back_prop(y)
                 for b in ma_nabla_b:
                     tmp = np.zeros_like(b)
                     comm.Allreduce(b, tmp)
-                    #if b.shape[0] == 2:
-                    #    print('rank=', rank, ', b=', b, ', tmp=', tmp)
-                    #ringallreduce(b, tmp, comm)
+
                     nabla_b.append(tmp)
                 for w in ma_nabla_w:
                     tmp = np.zeros_like(w)
                     comm.Allreduce(w, tmp)
-                    #ringallreduce(w, tmp, comm)
+
                     nabla_w.append(tmp)
 
                 #calculate work
