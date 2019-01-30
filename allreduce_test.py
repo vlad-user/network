@@ -90,5 +90,4 @@ if la_comm.rank == 0:
 
 np.testing.assert_almost_equal(res0, res2, decimal=5)
 if verbose: print('------------------------------------------------------------------------------------')
-
 '''
