@@ -27,42 +27,25 @@ class SynchronicNeuralNetwork(NeuralNetwork):
             
             for x, y in mini_batches:
                 
-                # doing props
                 self.forward_prop(x)
                 ma_nabla_b, ma_nabla_w = self.back_prop(y)
                 
-                # summing all ma_nabla_b and ma_nabla_w to nabla_w and nabla_b
-                nabla_w = []
-                nabla_b = []
-                #TODO
-                # nabla_w = list(np.empty_like(ma_nabla_w,dtype=np.float64))
-                # nabla_b = list(np.empty_like(ma_nabla_b,dtype=np.float64))
-                # nabla_w = [0]*len(ma_nabla_w)
-                for i in range(len(ma_nabla_w)):
-                    nabla_w.append(np.empty_like(ma_nabla_w[i]))
-                # nabla_b = [0]*len(ma_nabla_b)
-                for i in range(len(ma_nabla_b)):
-                    nabla_b.append(np.empty_like(ma_nabla_b[i]))
-                for elem in zip(ma_nabla_w,nabla_w):
-                    # print(type(elem[0]))
-                    # print(type(elem[1]))
-                    comm.Allreduce(elem[0],elem[1],op=MPI.SUM)
-                    # my_naive_allreduce.allreduce(elem[0],elem[1],comm)
-                    # my_ring_allreduce.ringallreduce(elem[0],elem[1],comm)
+                nabla_w = [np.zeros_like(w) for w in ma_nabla_w]
+                nabla_b = [np.zeros_like(b) for b in ma_nabla_b]
 
-                # comm.Allreduce(ma_nabla_b,nabla_b,op=MPI.SUM)
-                for elem in zip(ma_nabla_b,nabla_b):
-                    comm.Allreduce(elem[0],elem[1],op=MPI.SUM)
-                    # my_naive_allreduce.allreduce(elem[0],elem[1],comm)
-                    # my_ring_allreduce.ringallreduce(elem[0],elem[1],comm)
+                _ = [comm.Allreduce(w, reduced, op=MPI.SUM)
+                     for (w, reduced) in zip(ma_nabla_w, nabla_w)]
+                _ = [comm.Allreduce(b, reduced, op=MPI.SUM)
+                     for (b, reduced) in zip(ma_nabla_b, nabla_b)]
 
-
-                #calculate work
                 self.weights = [w - self.eta * dw for w, dw in zip(self.weights, nabla_w)]
                 self.biases = [b - self.eta * db for b, db in zip(self.biases, nabla_b)]        
                 
             self.print_progress(validation_data, epoch)
             sys.stdout.flush()
+
+        MPI.Finalize()
+
     def fit_v2(self, training_data, validation_data=None):
         if not MPI.Is_initialized():
             MPI.Init()
