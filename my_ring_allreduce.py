@@ -36,8 +36,11 @@ def ringallreduce(send, recv, comm):
     chunk2recv = prev_pid
 
     for _ in range(comm.size - 1):
-        comm.send(chunks[chunk2send], dest=next_pid)
-        chunks[chunk2recv] = np.add(chunks[chunk2recv], comm.recv(source=prev_pid))
+        comm.Send([chunks[chunk2send], MPI.FLOAT], dest=next_pid)
+        #comm.send(chunks[chunk2send], dest=next_pid)
+        tmp = np.zeros_like(chunks[chunk2recv])
+        comm.Recv([tmp, MPI.FLOAT], source=prev_pid)
+        chunks[chunk2recv] = np.add(chunks[chunk2recv], tmp)
         chunk2send = chunk2recv
         chunk2recv = (chunk2recv - 1) % size
 
@@ -45,8 +48,12 @@ def ringallreduce(send, recv, comm):
     chunk2recv = (chunk2send - 1) % size
 
     for _ in range(comm.size - 1):
-        comm.send(chunks[chunk2send], dest=next_pid)
-        chunks[chunk2recv] = comm.recv(source=prev_pid)
+        #comm.send(chunks[chunk2send], dest=next_pid)
+        comm.Send([chunks[chunk2send], MPI.FLOAT], dest=next_pid)
+        #chunks[chunk2recv] = comm.recv(source=prev_pid)
+        tmp = np.zeros_like(chunks[chunk2recv])
+        comm.Recv([tmp, MPI.FLOAT], source=prev_pid)
+        chunks[chunk2recv] = tmp
         chunk2send = chunk2recv
         chunk2recv = (chunk2recv - 1) % size
     
