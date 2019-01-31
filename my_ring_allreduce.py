@@ -53,7 +53,8 @@ def ringallreduce(send, recv, comm):
         #chunks[chunk2recv] = comm.recv(source=prev_pid)
         tmp = np.zeros_like(chunks[chunk2recv])
         comm.Recv([tmp, MPI.FLOAT], source=prev_pid)
-        chunks[chunk2recv] = tmp
+        np.copyto(chunks[chunk2recv], tmp)
+        #chunks[chunk2recv] = tmp
         chunk2send = chunk2recv
         chunk2recv = (chunk2recv - 1) % size
     
